@@ -4,8 +4,15 @@ using static SDL2.SDL_ttf;
 
 namespace PGAPI
 {
+    /// <summary>
+    /// This class will soon be reworked.
+    /// </summary>
+    [Obsolete("Soon to be reworked.")]
     public class Font
     {
+        /// <summary>
+        /// The representation of TTF_Font.
+        /// </summary>
         public IntPtr font;
 
         /// <summary>

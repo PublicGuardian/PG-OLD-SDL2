@@ -1,0 +1,32 @@
+[
+	{
+		"type": "rect",
+		"size": ["WindowX", "WindowY"],
+		"coordinates": [0, 0],
+		"properties": [[147, 181, 85, 255]]
+	},
+	{
+		"type": "image",
+		"size": [0.5, 0.5],
+		"coordinates": [-1, 100],
+		"properties": ["assets/PGLogo.png"]
+	},
+	{
+		"type": "rect",
+		"size": [250, 200],
+		"coordinates": [600, 150],
+		"properties": [[100, 45, 85, 255]]
+	},
+	{
+		"type": "text",
+		"size": [24],
+		"coordinates": [610, 160],
+		"properties": ["This shows how you can overlap things easily.", "assets/Louis George Cafe.ttf", [255, 255, 255, 255]]
+	},
+	{
+		"type": "text",
+		"size": [24],
+		"coordinates": [15, 15],
+		"properties": ["Hello World!", "assets/Louis George Cafe.ttf", [255, 255, 255, 255]]
+	}
+]

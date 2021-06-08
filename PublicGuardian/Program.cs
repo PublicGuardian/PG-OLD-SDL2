@@ -39,32 +39,21 @@ namespace PublicGuardian
 									SDL_WindowFlags.SDL_WINDOW_RESIZABLE,
 									isDev ? $"Public Guardian Preliminary - {titleStrings[rand.Next(0, titleStrings.Length)]}" : "Public Guardian");
 			
+			// Load the default scene.
+			win.LoadNewScene(AppDomain.CurrentDomain.BaseDirectory + "assets/MainMenu.json");
+
 			// Game loop. Only runs while the Window hasn't been destroyed.
 			while (win.IsOpen) {
 				// App events loop.
 				App.DoEvents();
-				SDL_SetRenderDrawColor(win.renderer, 25, 25, 25, 255);
 
-				SDL_Color textColor = new SDL_Color();
-				textColor.r = textColor.g = textColor.b = textColor.a = 255;
+				// Render the currently-loaded scene.
+				win.RenderCurrentScene();
 
-				SDL_Rect rect;
-				rect.x = rect.y = 0;
-				SDL_GetWindowSize(win.window, out rect.w, out rect.h);
-				SDL_RenderFillRect(win.renderer, ref rect);
-				
-				win.RenderFont(DefaultColors.White, "Hello World!", new SDL_Rect() {
-					x = 15,
-					y = 15
-				});
-
-				Image logo = new Image(AppDomain.CurrentDomain.BaseDirectory + "PG Wordmark White.png");
-				int imgX, imgY;
-				SDL_GetWindowSize(win.window, out imgX, out imgY);
-
-				logo.RenderTexture(win.renderer, -1, 100, 0.5, 0.5, imgX, imgY);
-				
+				// Present the rendered items to the Window.
 				SDL_RenderPresent(win.renderer);
+
+				// Frame limiter to about 60 FPS.
 				SDL_Delay(16);
 			}
 

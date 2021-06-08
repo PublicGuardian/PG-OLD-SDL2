@@ -1,16 +1,41 @@
 ﻿using System;
 using System.Drawing;
+using System.Collections.Generic;
+using System.IO;
+using Newtonsoft.Json;
+using PGAPI.UI;
 using static SDL2.SDL;
 using static SDL2.SDL_ttf;
 
 namespace PGAPI
 {
+	/// <summary>
+	/// This class is a wrapper on top of SDL_Window in order to make certain functions far easier.
+	/// </summary>
 	public class Window : IDisposable
 	{
+		/// <summary>
+		/// This is the raw SDL_Window. Please only use this in API requests when necessary.
+		/// </summary>
 		public IntPtr window;
-		public IntPtr renderer;
+
+		/// <summary>
+		/// The raw SDL_Renderer. Only use this when necessary.
+		/// </summary>
+		public IntPtr renderer; 
+
+		[Obsolete("Will be removed soon, do not use")]
 		public Font font = new Font(AppDomain.CurrentDomain.BaseDirectory + "Louis George Cafe.ttf", 24);
-		public bool IsOpen = true;
+
+		/// <summary>
+		/// The boolean that determines if the window is "open" or not. Only modifiable by other functions inside this API.
+		/// </summary>
+		public bool IsOpen { get; internal set; } = true;
+
+		/// <summary>
+		/// The current scene object. Blank before runtime.
+		/// </summary>
+		public List<UIObject> CurrentScene = new List<UIObject>();
 
 		/// <summary>
 		/// Creates a new window.
@@ -24,6 +49,7 @@ namespace PGAPI
 		{
 			window = SDL_CreateWindow(title, x, y, size.Width, size.Height, flags);
 			renderer = SDL_CreateRenderer(window, -1, SDL_RendererFlags.SDL_RENDERER_ACCELERATED);
+			SDL_SetWindowMinimumSize(window, 1280, 720);
 
 			App.HandleWindowCreated(this);
 		}
@@ -33,31 +59,83 @@ namespace PGAPI
 		/// </summary>
 		public void Dispose()
 		{
-			TTF_CloseFont(font.font);
+			foreach (UIObject obj in CurrentScene) {
+				obj.OnDestroy();
+			}
+
 			SDL_DestroyRenderer(renderer);
 			SDL_DestroyWindow(window);
 			App.HandleWindowDestroyed(this);
 		}
 
 		/// <summary>
-		/// Render text onto this window's renderer.
+		/// Load a new scene into this Window's memory. To render your newly-loaded scene, call Window.RenderCurrentScene().
 		/// </summary>
-		/// <param name="color">The color to use for the text.</param>
-		/// <param name="text">The string to use.</param>
-		/// <param name="rect">The coordinates of the textbox. Leave the width and height parameters blank, this is generated automatically.</param>
-		public void RenderFont(SDL_Color color, string text, SDL_Rect rect) {
-			int w, h;
+		/// <param name="sceneFile">The file path to the location where the scene's file is stored.</param>
+		public void LoadNewScene(string sceneFile) {
+			// If a scene is already loaded, call the appropriate Destroy calls first, and then clear the List
+			if (CurrentScene.Count != 0) {
+				foreach (UIObject obj in CurrentScene) {
+					obj.OnDestroy();
+				}
 
-			try {
-				int sizeText = TTF_SizeText(font.font, text, out w, out h);
-
-				rect.w = w;
-				rect.h = h;
-			} catch (Exception e) {
-				Console.WriteLine(e.Message);
+				CurrentScene.Clear();
 			}
 
-			font.RenderTexture(renderer, color, text, rect);
+			using (StreamReader file = File.OpenText(sceneFile)) {
+				var rawJson = JsonConvert.DeserializeObject<List<ObjectJSON>>(file.ReadToEnd());
+
+				if (rawJson == null) {
+					throw new Exception("Failed to serialize the JSON file");
+				}
+
+				foreach (ObjectJSON json in rawJson) {
+					UIObject actualObj = json.type switch {
+						"rect" => new Rect(),
+						"image" => new Image(),
+						"text" => new Text(),
+						_ => throw new Exception("Object JSON has invalid type property.")
+					};
+
+					actualObj.type = json.type;
+					actualObj.size = json.size;
+					actualObj.coordinates = json.coordinates;
+					actualObj.properties = json.properties;
+
+					CurrentScene.Add(actualObj);
+				}
+			}
+		}
+
+		/// <summary>
+		/// Render the currently-loaded scene into this Window's renderer. Call inside the game loop.
+		/// </summary>
+		public void RenderCurrentScene() {
+			foreach (UIObject obj in CurrentScene) {
+				Type objType = obj.GetType();
+				int winW, winH = 0;
+
+				if (objType == typeof(Image)) {
+					Image tempImg = (Image)obj;
+					SDL_GetWindowSize(window, out winW, out winH);
+
+					tempImg.SubmitRenderer(renderer, winW, winH, true);
+					tempImg.Draw();
+				} else if (objType == typeof(Rect)) {
+					Rect tempRect = (Rect)obj;
+					SDL_GetWindowSize(window, out winW, out winH);
+
+					tempRect.SubmitRenderer(renderer, winW, winH);
+					tempRect.Draw();
+				} else if (objType == typeof(Text)) { 
+					Text tempText = (Text)obj;
+					
+					tempText.SubmitRenderer(renderer, true);
+					tempText.Draw();
+				} else {
+					obj.Draw();
+				}
+			}
 		}
 
 		/// <summary>

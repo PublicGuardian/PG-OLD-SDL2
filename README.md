@@ -7,7 +7,7 @@ Do **not** leak the source code for this game.
 ## How to set this up
 You will need .NET Core 5.0 or higher (currently tested on 5.0.202).
 
-For now, you'll need to first copy the files in "Assets" into the folder where the executable is.
+For now, you'll need to first copy the folder "assets" into the folder where the executable is.
 
 Then, to build without executing:
 ```
